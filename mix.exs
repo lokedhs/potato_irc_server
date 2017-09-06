@@ -11,11 +11,12 @@ defmodule PotatoIrcServer.Mixfile do
 
   # Run "mix help compile.app" to learn about applications.
   def application do
-    [extra_applications: [:logger]]
+    [extra_applications: [:logger, :amqp]]
   end
 
   # Run "mix help deps" to learn about dependencies.
   defp deps do
-    [{:exirc, "~> 1.0.1"}]
+    [{:exirc, "~> 1.0.1"},
+     {:amqp, "~> 1.0.0-pre1"}]
   end
 end

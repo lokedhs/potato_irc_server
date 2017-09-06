@@ -1,16 +1,18 @@
-defmodule PotatoHandler do
+defmodule PotatoIrcServer.Handler do
+  use GenServer
 
   defmodule Connection do
-    defstruct pid: nil, channels: []
+    defstruct irc_connection: nil, amqp_connection: nil, channels: %{}, logged_in: false
   end
 
   defmodule Channel do
-    defstruct potato_channel: nil, irc_channel: nil
+    defstruct potato_channel: nil, irc_channel: nil, pid: nil
   end
 
   def start!() do
-    {:ok, pid} = ExIrc.Client.start!
-    start_link([%Connection{pid: pid}])
+    {:ok, rqt_conn} = AMQP.Connection.open
+    {:ok, irc_conn} = ExIrc.Client.start!
+    start_link([%Connection{irc_connection: irc_conn, amqp_connection: rqt_conn}])
   end
 
   def start_link([conn]) do
@@ -18,9 +20,31 @@ defmodule PotatoHandler do
   end
 
   def init(conn) do
-    ExIrc.Client.add_handler conn.pid, self()
-    :ok = ExIrc.Client.connect! conn.pid, "localhost", 6667
+    ExIrc.Client.add_handler conn.irc_connection, self()
+    :ok = ExIrc.Client.connect! conn.irc_connection, "localhost", 6667
     {:ok, conn}
+  end
+
+  defp start_channel_tracker(conn, potato_channel, irc_channel) do
+    PotatoIrcServer.ChannelTracker.start!(conn.irc_connection, conn.amqp_connection, potato_channel, irc_channel)
+  end
+
+  defp make_channel(conn, potato_channel, irc_channel) do
+    pid = if conn.logged_in do
+      start_channel_tracker(conn, potato_channel, irc_channel)
+    else
+      nil
+    end
+    %Channel{potato_channel: potato_channel, irc_channel: irc_channel, pid: pid}
+  end
+
+  defp add_channels(conn) do
+    case Enum.find(conn.channels, fn({_, v}) -> v.pid == nil end) do
+      nil ->
+        conn
+      {irc_channel, channel} ->
+        %{conn.channels | irc_channel => %{channel | pid: start_channel_tracker(conn, channel.potato_channel, irc_channel)}}
+    end
   end
 
   @doc """
@@ -43,12 +67,13 @@ defmodule PotatoHandler do
   """
   def handle_info({:connected, server, port}, conn) do
     debug "Connected to #{server}:#{port}, conn: #{inspect(conn)}"
-    :ok = ExIrc.Client.logon conn.pid, "", "potato", "potato", "Potato link bot"
+    :ok = ExIrc.Client.logon conn.irc_connection, "", "potato", "potato", "Potato link bot"
     {:noreply, conn}
   end
 
   def handle_info(:logged_in, conn) do
     debug "Logged in to server, conn: #{inspect(conn)}"
+    conn = add_channels(conn)
     {:noreply, conn}
   end
 
@@ -155,15 +180,16 @@ defmodule PotatoHandler do
 
   def handle_call({:add_channel, potato_channel, irc_channel}, _from, conn) do
     cond do
-      Enum.find(conn.channels, fn(v) -> v.potato_channel == potato_channel end) ->
-        {:reply, {:error, :potato_channel_already_exists}, conn}
-      Enum.find(conn.channels, fn(v) -> v.irc_channel == irc_channel end) ->
+      conn.channels[irc_channel] ->
         {:reply, {:error, :irc_channel_already_exists}, conn}
+      Enum.find(conn.channels, fn({_, v}) -> v.potato_channel == potato_channel end) ->
+        {:reply, {:error, :potato_channel_already_exists}, conn}
       true ->
         IO.puts "Adding #{potato_channel} to server as #{irc_channel}"
-        :ok = ExIrc.Client.join conn.pid, irc_channel
-        {:reply, :ok, %{conn | channels: conn.channels ++ [%Channel{potato_channel: potato_channel, irc_channel: irc_channel}]}}
-    end
+#        :ok = ExIrc.Client.join conn.irc_connection, irc_channel
+        channel = make_channel(conn, potato_channel, irc_channel)
+        {:reply, :ok, %{conn | channels: Map.put(conn.channels, irc_channel, channel)}}
+    end    
   end
 
   defp debug(msg) do

@@ -1,8 +1,10 @@
 defmodule PotatoIrcServer do
+  alias PotatoIrcServer.Handler
+
   def start_server do
     # TODO: This should be a link
-    {:ok, pid} = PotatoHandler.start!
-    # add_channel pid, "b9e7d33c4fb7c55f4cdd946ff100506f", "#bar"
+    {:ok, pid} = Handler.start!
+    add_channel pid, "b9e7d33c4fb7c55f4cdd946ff100506f", "#bar"
     pid
   end
 
