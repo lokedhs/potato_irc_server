@@ -17,6 +17,7 @@ defmodule PotatoIrcServer.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [{:exirc, "~> 1.0.1"},
-     {:amqp, "~> 1.0.0-pre1"}]
+     {:amqp, "~> 1.0.0-pre1"},
+     {:poison, "~> 3.1.0"}]
   end
 end

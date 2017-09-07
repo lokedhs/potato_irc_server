@@ -5,7 +5,7 @@ defmodule PotatoIrcServer do
     # TODO: This should be a link
     {:ok, pid} = Handler.start!
     add_channel pid, "b9e7d33c4fb7c55f4cdd946ff100506f", "#bar"
-    pid
+    {:ok, pid}
   end
 
   def add_channel(pid, potato_channel, irc_channel) do
