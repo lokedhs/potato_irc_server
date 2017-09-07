@@ -133,6 +133,10 @@ defmodule PotatoIrcServer.Handler do
   def handle_info({:received, message, sender, channel}, conn) do
     from = sender.nick
     debug "#{from} sent a message to #{channel}: #{message}"
+    channel = conn.channels[channel]
+    if channel do
+      GenServer.cast channel.pid, {:recv_message, %{from: from, content: message}}
+    end
     {:noreply, conn}
   end
 

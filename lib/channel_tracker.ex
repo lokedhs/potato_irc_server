@@ -1,13 +1,17 @@
 defmodule PotatoIrcServer.ChannelTracker do
   use GenServer
 
+  @send_message_exchange "chat-image-response-ex"
+  @receive_message_exchange "message-send-ex"
+
   defmodule State do
     defstruct irc_connection: nil, amqp_connection: nil,
       potato_channel: nil, irc_channel: nil
   end
 
   def start!(irc_conn, rqt_conn, potato_channel, irc_channel) do
-    start_link([%State{irc_connection: irc_conn, amqp_connection: rqt_conn,
+    {:ok, channel} = AMQP.Channel.open(rqt_conn)
+    start_link([%State{irc_connection: irc_conn, amqp_connection: channel,
                        potato_channel: potato_channel, irc_channel: irc_channel}])
   end
 
@@ -16,17 +20,20 @@ defmodule PotatoIrcServer.ChannelTracker do
   end
 
   def init(state) do
-    {:ok, channel} = AMQP.Channel.open(state.amqp_connection)
-    {:ok, %{queue: queue}} = AMQP.Queue.declare(channel, "", [auto_delete: true])
-    :ok = AMQP.Queue.bind(channel, queue, "message-send-ex", [routing_key: "*." <> state.potato_channel <> ".*"])
-    {:ok, _consumer_tag} = AMQP.Basic.consume(channel, queue)
+    {:ok, %{queue: queue}} = AMQP.Queue.declare(state.amqp_connection, "", [auto_delete: true])
+    :ok = AMQP.Queue.bind(state.amqp_connection, queue, @receive_message_exchange, [routing_key: "*." <> state.potato_channel <> ".*"])
+    {:ok, _consumer_tag} = AMQP.Basic.consume(state.amqp_connection, queue)
     {:ok, state}
+  end
+
+  defp escape_string(s) do
+    Regex.replace ~r/\"/, s, "\\\""
   end
 
   def handle_info({:basic_deliver, payload, %{delivery_tag: _delivery_tag, redelivered: _redelivered}}, state) do
     IO.puts "Got rabbitmq message: #{inspect(payload)}"
     parsed = Poison.decode!(payload)
-    ExIrc.Client.msg state.irc_connection, :privmsg, state.irc_channel, "From: #{parsed["from_name"]}: #{parsed["text"]}"
+    :ok = ExIrc.Client.msg state.irc_connection, :privmsg, state.irc_channel, "From: #{parsed["from_name"]}: #{parsed["text"]}"
     {:noreply, state}
   end
 
@@ -42,5 +49,16 @@ defmodule PotatoIrcServer.ChannelTracker do
   def handle_cast({:logged_in}, state) do
     :ok = ExIrc.Client.join state.irc_connection, state.irc_channel
     {:noreply, state}
+  end
+
+  def handle_cast({:recv_message, msg}, state) do
+    %{from: from, content: content} = msg
+    payload = format_potato_message state.potato_channel, "IRC: #{from}: #{content}"
+    :ok = AMQP.Basic.publish state.amqp_connection, @send_message_exchange, "", payload
+    {:noreply, state}
+  end
+
+  defp format_potato_message(channel, text) do
+    "(:POST (\"#{escape_string(channel)}\" :TEXT \"#{escape_string(text)}\" :SENDER \"user-faa0a2d1178d3cda032b\"))"
   end
 end
