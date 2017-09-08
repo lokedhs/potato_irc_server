@@ -3,9 +3,13 @@ defmodule PotatoIrcServer.Handler do
 
   @irc_host Application.get_env(:potato_irc_server, :irc_host)
   @irc_port Application.get_env(:potato_irc_server, :irc_port)
+  @irc_pass Application.get_env(:potato_irc_server, :irc_pass) || ""
+  @irc_nick Application.get_env(:potato_irc_server, :irc_pass) || "potato"
+  @irc_user Application.get_env(:potato_irc_server, :irc_pass) || "potato"
+  @irc_name Application.get_env(:potato_irc_server, :irc_pass) || "Potato link bot"
   @amqp_host Application.get_env(:potato_irc_server, :amqp_host) || "localhost"
-  @amqp_host Application.get_env(:potato_irc_server, :amqp_user) || "guest"
-  @amqp_host Application.get_env(:potato_irc_server, :amqp_password) || "guest"
+  @amqp_user Application.get_env(:potato_irc_server, :amqp_user) || "guest"
+  @amqp_password Application.get_env(:potato_irc_server, :amqp_password) || "guest"
 
   defmodule Connection do
     defstruct irc_connection: nil, amqp_connection: nil, channels: %{}, logged_in: false
@@ -61,7 +65,7 @@ defmodule PotatoIrcServer.Handler do
   """
   def handle_info({:connected, server, port}, conn) do
     debug "Connected to #{server}:#{port}, conn: #{inspect(conn)}"
-    :ok = ExIrc.Client.logon conn.irc_connection, "", "potato", "potato", "Potato link bot"
+    :ok = ExIrc.Client.logon conn.irc_connection, @irc_pass, @irc_nick, @irc_user, @irc_name
     {:noreply, conn}
   end
 
