@@ -60,6 +60,6 @@ defmodule PotatoIrcServer.ChannelTracker do
   end
 
   defp format_potato_message(channel, text) do
-    "(:POST (\"#{escape_string(channel)}\" :TEXT \"#{escape_string(text)}\" :SENDER \"#{potato_user}\"))"
+    "(:POST (\"#{escape_string(channel)}\" :TEXT \"#{escape_string(text)}\" :SENDER \"#{@potato_user}\"))"
   end
 end
