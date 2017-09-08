@@ -3,6 +3,7 @@ defmodule PotatoIrcServer.ChannelTracker do
 
   @send_message_exchange "chat-image-response-ex"
   @receive_message_exchange "message-send-ex"
+  @potato_user Application.get_env(:potato_irc_server, :potato_user)
 
   defmodule State do
     defstruct irc_connection: nil, amqp_connection: nil,
@@ -59,6 +60,6 @@ defmodule PotatoIrcServer.ChannelTracker do
   end
 
   defp format_potato_message(channel, text) do
-    "(:POST (\"#{escape_string(channel)}\" :TEXT \"#{escape_string(text)}\" :SENDER \"user-faa0a2d1178d3cda032b\"))"
+    "(:POST (\"#{escape_string(channel)}\" :TEXT \"#{escape_string(text)}\" :SENDER \"#{potato_user}\"))"
   end
 end
