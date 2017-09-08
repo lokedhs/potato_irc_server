@@ -1,8 +1,11 @@
 defmodule PotatoIrcServer.Handler do
   use GenServer
 
-  @irc_host Application.get_env :potato_irc_server, :irc_host
-  @irc_port Application.get_env :potato_irc_server, :irc_port
+  @irc_host Application.get_env(:potato_irc_server, :irc_host)
+  @irc_port Application.get_env(:potato_irc_server, :irc_port)
+  @amqp_host Application.get_env(:potato_irc_server, :amqp_host) || "localhost"
+  @amqp_host Application.get_env(:potato_irc_server, :amqp_user) || "guest"
+  @amqp_host Application.get_env(:potato_irc_server, :amqp_password) || "guest"
 
   defmodule Connection do
     defstruct irc_connection: nil, amqp_connection: nil, channels: %{}, logged_in: false
@@ -13,7 +16,7 @@ defmodule PotatoIrcServer.Handler do
   end
 
   def start!() do
-    {:ok, rqt_conn} = AMQP.Connection.open
+    {:ok, rqt_conn} = AMQP.Connection.open(host: @amqp_host, username: @amqp_user, password: @amqp_password)
     {:ok, irc_conn} = ExIrc.Client.start!
     start_link([%Connection{irc_connection: irc_conn, amqp_connection: rqt_conn}])
   end
