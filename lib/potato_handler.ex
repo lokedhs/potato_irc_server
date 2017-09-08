@@ -4,9 +4,9 @@ defmodule PotatoIrcServer.Handler do
   @irc_host Application.get_env(:potato_irc_server, :irc_host)
   @irc_port Application.get_env(:potato_irc_server, :irc_port)
   @irc_pass Application.get_env(:potato_irc_server, :irc_pass) || ""
-  @irc_nick Application.get_env(:potato_irc_server, :irc_pass) || "potato"
-  @irc_user Application.get_env(:potato_irc_server, :irc_pass) || "potato"
-  @irc_name Application.get_env(:potato_irc_server, :irc_pass) || "Potato link bot"
+  @irc_nick Application.get_env(:potato_irc_server, :irc_nick) || "potato"
+  @irc_user Application.get_env(:potato_irc_server, :irc_user) || "potato"
+  @irc_name Application.get_env(:potato_irc_server, :irc_name) || "Potato link bot"
   @amqp_host Application.get_env(:potato_irc_server, :amqp_host) || "localhost"
   @amqp_user Application.get_env(:potato_irc_server, :amqp_user) || "guest"
   @amqp_password Application.get_env(:potato_irc_server, :amqp_password) || "guest"
