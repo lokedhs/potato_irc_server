@@ -32,5 +32,5 @@ use Mix.Config
 config :potato_irc_server,
   irc_host: "localhost",
   irc_port: 6667,
-  potato_user: "user-faa0a2d1178d3cda032b"
+  potato_user: "user-faa0a2d1178d3cda032b",
   channels: [[potato_channel: "b9e7d33c4fb7c55f4cdd946ff100506f", irc_channel: "#bar"]]
