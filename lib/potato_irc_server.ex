@@ -1,10 +1,14 @@
 defmodule PotatoIrcServer do
   alias PotatoIrcServer.Handler
 
+  @channels Application.get_env :potato_irc_server, :channels
+
   def start_server do
     # TODO: This should be a link
     {:ok, pid} = Handler.start!
-    add_channel pid, "b9e7d33c4fb7c55f4cdd946ff100506f", "#bar"
+    Enum.each @channels, fn([potato_channel: potato_channel, irc_channel: irc_channel]) ->
+      add_channel pid, potato_channel, irc_channel
+    end
     {:ok, pid}
   end
 

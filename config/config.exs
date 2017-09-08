@@ -28,3 +28,8 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env}.exs"
+
+config :potato_irc_server,
+  irc_host: "localhost",
+  irc_port: 6667,
+  channels: [[potato_channel: "b9e7d33c4fb7c55f4cdd946ff100506f", irc_channel: "#bar"]]

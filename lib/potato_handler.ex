@@ -1,6 +1,9 @@
 defmodule PotatoIrcServer.Handler do
   use GenServer
 
+  @irc_host Application.get_env :potato_irc_server, :irc_host
+  @irc_port Application.get_env :potato_irc_server, :irc_port
+
   defmodule Connection do
     defstruct irc_connection: nil, amqp_connection: nil, channels: %{}, logged_in: false
   end
@@ -21,7 +24,7 @@ defmodule PotatoIrcServer.Handler do
 
   def init(conn) do
     ExIrc.Client.add_handler conn.irc_connection, self()
-    :ok = ExIrc.Client.connect! conn.irc_connection, "localhost", 6667
+    :ok = ExIrc.Client.connect! conn.irc_connection, @irc_host, @irc_port
     {:ok, conn}
   end
 
@@ -76,7 +79,7 @@ defmodule PotatoIrcServer.Handler do
   end
 
   def handle_info({:joined, channel, user}, conn) do
-    debug "#{user} joined #{channel}"
+    debug "#{inspect(user)} joined #{channel}"
     {:noreply, conn}
   end
 
